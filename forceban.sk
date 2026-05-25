@@ -1,0 +1,71 @@
+options:
+    p: &e&lSUNUCU &8» &r
+    yetki: skript.forceban
+    yetki-mesaj: &cBu komutu kullanmak için gerekli yetkiye sahip değilsin!
+
+command /forceban [<offlineplayer>] [<text>]:
+    aliases: /yargı, /fban
+    permission: {@yetki}
+    permission message: {@yetki-mesaj}
+    trigger:
+        if arg-1 is not set:
+            send "{@p}&7Kullanım: &e/forceban <oyuncu> <sebep>" to player
+            stop
+            
+        if arg-2 is not set:
+            send "{@p}&7Lütfen geçerli bir yasaklama sebebi giriniz!" to player
+            stop
+            
+        if {forceban::%arg-1%} is set:
+            send "{@p}&cBu oyuncu zaten sistemde forcebanlı durumda!" to player
+            stop
+            
+        set {forceban::%arg-1%} to true
+        set {forceban::sebep::%arg-1%} to arg-2
+        set {forceban::yetkili::%arg-1%} to player
+        set {forceban::tarih::%arg-1%} to now
+        
+        if arg-1 is online:
+            kick arg-1 because "%nl%&4&lSunucudan Yasaklandınız!%nl%%nl%&7Yasaklayan Yetkili: &e%player%%nl%&7Yasaklama Sebebi: &c%arg-2%%nl%&7Tarih: &f%now%%nl%%nl%&fİtiraz etmek için Discord sunucumuza gelebilirsiniz."
+            
+        broadcast "{@p}&c%arg-1% &7isimli oyuncu, &e%player% &7tarafından &c%arg-2% &7sebebiyle sunucudan &4&lFORCEBAN &7ile yasaklandı!"
+
+on connect:
+    if {forceban::%player%} is set:
+        if {forceban::%player%} is true:
+            reject connection because "%nl%&4&lSunucudan Yasaklandınız!%nl%%nl%&7Yasaklayan Yetkili: &e%{forceban::yetkili::%player%}% %nl%&7Yasaklama Sebebi: &c%{forceban::sebep::%player%}% %nl%&7Tarih: &f%{forceban::tarih::%player%}% %nl%%nl%&fİtiraz etmek için Discord sunucumuza gelebilirsiniz."
+
+command /unforceban [<offlineplayer>]:
+    aliases: /unfban, /fbanbanakaldır
+    permission: {@yetki}
+    permission message: {@yetki-mesaj}
+    trigger:
+        if arg-1 is not set:
+            send "{@p}&7Kullanım: &e/unforceban <oyuncu>" to player
+            stop
+            
+        if {forceban::%arg-1%} is not set:
+            send "{@p}&cBu oyuncunun aktif bir forceban cezası bulunmuyor!" to player
+            stop
+            
+        delete {forceban::%arg-1%}
+        delete {forceban::sebep::%arg-1%}
+        delete {forceban::yetkili::%arg-1%}
+        delete {forceban::tarih::%arg-1%}
+        
+        send "{@p}&e%arg-1% &7isimli oyuncunun forceban cezası başarıyla kaldırıldı." to player
+        broadcast "{@p}&a%arg-1% &7isimli oyuncunun forceban cezası &e%player% &7tarafından kaldırıldı."
+
+command /forcebanliste:
+    permission: {@yetki}
+    permission message: {@yetki-mesaj}
+    trigger:
+        send "      &4&l=== FORCEBANLI OYUNCULAR ===      " to player
+        set {_count} to 0
+        loop {forceban::*}:
+            if loop-value is true:
+                add 1 to {_count}
+                set {_p} to loop-index
+                send "&e%{_count}%. &c%{_p}% &8- &7Yetkili: &e%{forceban::yetkili::%{_p}%}% &8- &7Sebep: &c%{forceban::sebep::%{_p}%}%" to player
+        if {_count} is 0:
+            send "&7Sistemde kayıtlı forcebanlı oyuncu bulunmamaktadır." to player
